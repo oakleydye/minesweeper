@@ -26,7 +26,9 @@ public class Board {
 
         createBoardMatrix(false);
         placeMines();
+        placeNumbers();
         createBoardMatrix(true);
+        printBoard(boardMatrix);
         printBoard(userBoardMatrix);
     }
     //endregion
@@ -85,6 +87,52 @@ public class Board {
     //endregion
 
     //region Private Helper Methods
+    private void placeNumbers(){
+        for (int i = 0; i < rows; i++){
+            for (int j = 0; j < cols; j++){
+
+                if (boardMatrix.get(i).get(j).equals("*"))
+                    continue;
+
+                HashMap<Integer, Integer> adjacentSquares = createListOfAdjacentSquares(i, j);
+
+                int currentValue;
+                if (boardMatrix.get(i).get(j).equals(" "))
+                    currentValue = 0;
+                else
+                    currentValue = Integer.parseInt(boardMatrix.get(i).get(j));
+
+                for (Map.Entry entry : adjacentSquares.entrySet()){
+                    int rowIndex = Integer.parseInt(entry.getKey().toString());
+                    int colIndex = Integer.parseInt(entry.getValue().toString());
+
+                    if (boardMatrix.get(rowIndex).get(colIndex).equals("*"))
+                        currentValue++;
+                }
+
+                boardMatrix.get(i).set(j, String.valueOf(currentValue));
+            }
+        }
+    }
+
+    private HashMap<Integer, Integer> createListOfAdjacentSquares(int rowIndex, int colIndex) {
+        HashMap<Integer, Integer> adjacentSquares = new HashMap<>();
+        adjacentSquares.put(rowIndex - 1, colIndex - 1);
+        adjacentSquares.put(rowIndex - 1, colIndex);
+        adjacentSquares.put(rowIndex - 1, colIndex + 1);
+        adjacentSquares.put(rowIndex, colIndex - 1);
+        adjacentSquares.put(rowIndex, colIndex + 1);
+        adjacentSquares.put(rowIndex + 1, colIndex -1);
+        adjacentSquares.put(rowIndex + 1, colIndex);
+        adjacentSquares.put(rowIndex + 1, colIndex + 1);
+
+        adjacentSquares.entrySet().removeIf(e -> e.getKey() < 0);
+        adjacentSquares.entrySet().removeIf(e -> e.getKey() >= rows);
+        adjacentSquares.entrySet().removeIf(e -> e.getValue() < 0);
+        adjacentSquares.entrySet().removeIf(e -> e.getValue() >= cols);
+        return adjacentSquares;
+    }
+
     private int getIndexOfCharInAlphaArray(char colName){
         for (int i = 0; i < alpha.length; i++) {
             char c = alpha[i];
@@ -95,106 +143,30 @@ public class Board {
     }
 
     private void uncoverAdjacentSquares(int rowIndex, int colIndex){
-        if (userBoardMatrix.get(rowIndex).get(colIndex).equals(" ")){
-            boolean bCont = false;
-            //region Check all adjacent squares
-            //Check left
-            if (colIndex > 0){
-                int tempColIndex = colIndex - 1;
-                if (tempColIndex >= 0) {
-                    boolean bContTemp = uncoverSquare(rowIndex, tempColIndex);
-                    if (bContTemp)
-                        bCont = true;
-                }
-            }
+        if (rowIndex > -1 && rowIndex < rows && colIndex > -1 && colIndex < cols) {
+            if (userBoardMatrix.get(rowIndex).get(colIndex).equals(" ")) {
 
-            //Check right
-            if (colIndex < cols){
-                int tempColIndex = colIndex + 1;
-                if (tempColIndex < cols){
-                    boolean bContTemp = uncoverSquare(rowIndex, tempColIndex);
-                    if (!bCont && bContTemp)
-                        bCont = true;
-                }
-            }
+                HashMap<Integer, Integer> adjacentSquares = createListOfAdjacentSquares(rowIndex, colIndex);
 
-            //Check up
-            if (rowIndex > 0){
-                int tempRowIndex = rowIndex - 1;
-                if (tempRowIndex >= 0) {
-                    boolean bContTemp = uncoverSquare(tempRowIndex, colIndex);
-                    if (!bCont && bContTemp)
-                        bCont = true;
+                for (Map.Entry entry : adjacentSquares.entrySet()) {
+                    uncoverSquare(Integer.parseInt(entry.getKey().toString()), Integer.parseInt(entry.getValue().toString()));
                 }
-            }
 
-            //Check down
-            if (rowIndex < rows){
-                int tempRowIndex = rowIndex + 1;
-                if (tempRowIndex < rows){
-                    boolean bContTemp = uncoverSquare(tempRowIndex, colIndex);
-                    if (!bCont && bContTemp)
-                        bCont = true;
+                for (Map.Entry e : adjacentSquares.entrySet()) {
+                    uncoverAdjacentSquares(Integer.parseInt(e.getKey().toString()), Integer.parseInt(e.getValue().toString()));
                 }
             }
-
-            //Check up-left
-            if (rowIndex > 0 && colIndex > 0){
-                int tempRowIndex = rowIndex - 1;
-                int tempColIndex = colIndex - 1;
-                if (tempRowIndex >= 0 && tempColIndex >= 0){
-                    boolean bContTemp = uncoverSquare(tempRowIndex, tempColIndex);
-                    if (!bCont && bContTemp)
-                        bCont = true;
-                }
-            }
-
-            //Check up-right
-            if (rowIndex > 0 && colIndex < cols){
-                int tempRowIndex = rowIndex - 1;
-                int tempColIndex = colIndex + 1;
-                if (tempRowIndex >= 0 && tempColIndex < cols){
-                    boolean bContTemp = uncoverSquare(tempRowIndex, tempColIndex);
-                    if (!bCont && bContTemp)
-                        bCont = true;
-                }
-            }
-
-            //Check down-left
-            if (rowIndex < rows && colIndex > 0){
-                int tempRowIndex = rowIndex + 1;
-                int tempColIndex = colIndex - 1;
-                if (tempRowIndex < rows && tempColIndex >= 0){
-                    boolean bContTemp = uncoverSquare(tempRowIndex, tempColIndex);
-                    if (!bCont && bContTemp)
-                        bCont = true;
-                }
-            }
-
-            //Check down-right
-            if (rowIndex < rows && colIndex < cols){
-                int tempRowIndex = rowIndex + 1;
-                int tempColIndex = colIndex + 1;
-                if (tempRowIndex < rows && tempColIndex < cols){
-                    boolean bContTemp = uncoverSquare(tempRowIndex, tempColIndex);
-                    if (!bCont && bContTemp)
-                        bCont = true;
-                }
-            }
-            //endregion
         }
     }
 
-    private boolean uncoverSquare(int rowIndex, int colIndex){
+    private void uncoverSquare(int rowIndex, int colIndex){
         if (!boardMatrix.get(rowIndex).get(colIndex).equals(" ")){
             if (boardMatrix.get(rowIndex).get(colIndex).equals("*"))
-                return false;
+                return;
 
             userBoardMatrix.get(rowIndex).set(colIndex, boardMatrix.get(rowIndex).get(colIndex));
-            return false;
         }
         userBoardMatrix.get(rowIndex).set(colIndex, boardMatrix.get(rowIndex).get(colIndex));
-        return true;
     }
 
     private void createBoardMatrix(boolean isUserBoard){
